@@ -1,30 +1,38 @@
 package main
 
 import (
-	"context"
-	"log"
+	"context" // https://pkg.go.dev/context
+	"log"     // https://pkg.go.dev/log
 	"net/http"
-	"os"
-	"os/signal"
-	"time"
+	"os"        // https://pkg.go.dev/os
+	"os/signal" // https://pkg.go.dev/os/signal
+	"time"      // https://pkg.go.dev/time
 
 	"github.com/deepanshu-rawat6/go-microservices/product-api/handlers"
+	"github.com/joho/godotenv"
+	"github.com/nicholasjackson/env"
 )
 
+var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for the server")
+
 func main() {
+	godotenv.Load(".env")
+
+	portString := os.Getenv("PORT")
+
+	env.Parse()
+
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
 
 	// Handlers similar to routes to trigger funcs when hitting that end point
-	hh := handlers.NewHello(l)
-	gh := handlers.NewGoodbye(l)
+	ph := handlers.NewProducts(l)
 
 	sm := http.NewServeMux()
-	sm.Handle("/", hh)
-	sm.Handle("/goodbye", gh)
+	sm.Handle("/", ph)
 
 	// custom server, avoid default server
 	s := &http.Server{
-		Addr:         ":9090",
+		Addr:         ":" + portString,
 		Handler:      sm,
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
@@ -33,6 +41,8 @@ func main() {
 
 	// using gorutines, another thread executes the server logic
 	go func() {
+		l.Printf("Starting server on port %v", portString)
+
 		err := s.ListenAndServe()
 		if err != nil {
 			l.Fatal(err)
@@ -45,11 +55,12 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt)
 	signal.Notify(sigChan, os.Kill)
 
-	// Closing the channel to aviod any leaking of information
+	// Block until a signal is received.
 	sig := <-sigChan
 	l.Println("Received terminate, graceful shutdown", sig) // graceful termination
 
-	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	// gracefully shutdown the server, waiting max 30 seconds for current operations to complete
+	tcx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 
-	s.Shutdown(tc)
+	s.Shutdown(tcx)
 }
