@@ -19,12 +19,12 @@ func NewProducts(l *log.Logger) *Products {
 
 func (p *Products) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		p.GetProducts(w, r)
+		p.getProducts(w, r)
 		return
 	}
 
 	if r.Method == http.MethodPost {
-		p.AddProducts(w, r)
+		p.addProducts(w, r)
 		return
 	}
 
@@ -63,7 +63,7 @@ func (p *Products) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 
-func (p *Products) GetProducts(w http.ResponseWriter, r *http.Request) {
+func (p *Products) getProducts(w http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle GET Products")
 
 	lp := data.GetProducts()
@@ -73,7 +73,7 @@ func (p *Products) GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (p *Products) AddProducts(w http.ResponseWriter, r *http.Request) {
+func (p *Products) addProducts(w http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle POST Product")
 
 	prod := data.Product{}
@@ -88,4 +88,23 @@ func (p *Products) AddProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Products) updateProducts(id int, w http.ResponseWriter, r *http.Request) {
+	p.l.Println("Handle PUT Product")
+
+	prod := &data.Product{}
+
+	err := prod.FromJSON(r.Body)
+	if err != nil {
+		http.Error(w, "Unable to unmarshall json", http.StatusBadRequest)
+	}
+
+	err = data.UpdateProduct(id, prod)
+	if err == data.ErrProductNotFound {
+		http.Error(w, "Product not found", http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, "Product not found", http.StatusInternalServerError)
+		return
+	}
 }
