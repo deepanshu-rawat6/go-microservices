@@ -29,16 +29,19 @@ func (p *Products) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPut {
+		p.l.Println("PUT", r.URL.Path)
 		// expecting the id in the URI
 		rgx := regexp.MustCompile(`/([0-9]+)`)
 		g := rgx.FindAllStringSubmatch(r.URL.Path, -1)
 
 		if len(g) != 1 {
+			p.l.Println("Invalid URI more than one ID")
 			http.Error(w, "Invalid URL", http.StatusBadRequest)
 			return
 		}
 
-		if len(g[0]) != 1 {
+		if len(g[0]) != 2 {
+			p.l.Println("Invalid URI more than one capture group")
 			http.Error(w, "Invalid URL", http.StatusBadRequest)
 			return
 		}
@@ -46,11 +49,14 @@ func (p *Products) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		idString := g[0][1]
 		id, err := strconv.Atoi(idString)
 		if err != nil {
+			p.l.Println("Invalid URI unable to convert to number", idString)
 			http.Error(w, "Invalid URL", http.StatusBadRequest)
 			return
 		}
 
 		p.l.Println("Got ID", id)
+
+		p.updateProducts(id, w, r)
 	}
 
 	// catch all(request methods other than GET, will get 405 error)
@@ -79,4 +85,7 @@ func (p *Products) AddProducts(w http.ResponseWriter, r *http.Request) {
 	p.l.Printf("Prod: %#v", prod)
 
 	data.AddProduct(&prod)
+}
+
+func (p *Products) updateProducts(id int, w http.ResponseWriter, r *http.Request) {
 }
