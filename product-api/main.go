@@ -9,6 +9,7 @@ import (
 	"time"      // https://pkg.go.dev/time
 
 	"github.com/deepanshu-rawat6/go-microservices/product-api/handlers"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/nicholasjackson/env"
 )
@@ -27,12 +28,24 @@ func main() {
 	// Handlers similar to routes to trigger funcs when hitting that end point
 	ph := handlers.NewProducts(l)
 
-	sm := http.NewServeMux()
-	sm.Handle("/", ph)
+	// Router from gorilla mux package
+	sm := mux.NewRouter()
+
+	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("/", ph.GetProducts)
+
+	putRouter := sm.Methods(http.MethodPut).Subrouter()
+	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
+
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/", ph.AddProducts)
+
+	// sm.Handle("/products", ph)
 
 	// custom server, avoid default server
 	s := &http.Server{
-		Addr:         ":" + portString,
+		// Addr:         ":" + portString,
+		Addr:         *bindAddress,
 		Handler:      sm,
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
