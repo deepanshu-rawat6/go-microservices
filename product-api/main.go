@@ -1,5 +1,6 @@
 package main
 
+// Building a RESTful API, with go standard library
 import (
 	"context" // https://pkg.go.dev/context
 	"log"     // https://pkg.go.dev/log
@@ -32,7 +33,7 @@ func main() {
 
 	// custom server, avoid default server
 	s := &http.Server{
-		Addr:         ":" + portString,
+		Addr:         *bindAddress,
 		Handler:      sm,
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
