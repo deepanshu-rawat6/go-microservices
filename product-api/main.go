@@ -8,7 +8,9 @@ import (
 	"os/signal" // https://pkg.go.dev/os/signal
 	"time"      // https://pkg.go.dev/time
 
+	"github.com/deepanshu-rawat6/go-microservices/product-api/data"
 	"github.com/deepanshu-rawat6/go-microservices/product-api/handlers"
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/nicholasjackson/env"
@@ -24,23 +26,39 @@ func main() {
 	env.Parse()
 
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
+	v := data.NewValidation()
 
 	// Handlers similar to routes to trigger funcs when hitting that end point
-	ph := handlers.NewProducts(l)
+	ph := handlers.NewProducts(l, v)
 
 	// Router from gorilla mux package
 	sm := mux.NewRouter()
 
+	// Hanlders for API
 	getRouter := sm.Methods(http.MethodGet).Subrouter()
-	getRouter.HandleFunc("/", ph.GetProducts)
+	getRouter.HandleFunc("/", ph.ListAll)
+	getRouter.HandleFunc("/products/{id:[0-9]+}", ph.ListSingle)
 
 	putRouter := sm.Methods(http.MethodPut).Subrouter()
-	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
+	putRouter.HandleFunc("/products", ph.Update)
 	putRouter.Use(ph.MiddlewareValidateProduct)
 
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
-	postRouter.HandleFunc("/", ph.AddProducts)
+	postRouter.HandleFunc("/products", ph.Create)
 	postRouter.Use(ph.MiddlewareValidateProduct)
+
+	deleteRouter := sm.Methods(http.MethodDelete).Subrouter()
+	deleteRouter.HandleFunc("/products/{id:[0-9]+}", ph.Delete)
+
+	// handler for documentation
+	opts := middleware.RedocOpts{
+		SpecURL: "/swagger.yaml",
+	}
+
+	sh := middleware.Redoc(opts, nil)
+
+	getRouter.Handle("/docs", sh)
+	getRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./")))
 
 	// sm.Handle("/products", ph)
 
@@ -66,16 +84,15 @@ func main() {
 
 	// For graceful termination, we use os.signal, to send signals like interrupt(if we are closing the server)
 	// Now, if there are no requests in queue, then we send the kill signal to stop the server gracefully
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt)
-	signal.Notify(sigChan, os.Kill)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Kill)
 
 	// Block until a signal is received.
-	sig := <-sigChan
-	l.Println("Received terminate, graceful shutdown", sig) // graceful termination
+	sig := <-c
+	log.Println("Got signal:", sig) // graceful termination
 
 	// gracefully shutdown the server, waiting max 30 seconds for current operations to complete
-	tcx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-
-	s.Shutdown(tcx)
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	s.Shutdown(ctx)
 }
