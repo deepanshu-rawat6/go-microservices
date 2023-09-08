@@ -36,7 +36,7 @@ func main() {
 
 	// Hanlders for API
 	getRouter := sm.Methods(http.MethodGet).Subrouter()
-	getRouter.HandleFunc("/", ph.ListAll)
+	getRouter.HandleFunc("/products", ph.ListAll)
 	getRouter.HandleFunc("/products/{id:[0-9]+}", ph.ListSingle)
 
 	putRouter := sm.Methods(http.MethodPut).Subrouter()
