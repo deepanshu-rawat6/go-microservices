@@ -17,5 +17,5 @@ func TestOurClient(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(prod)
+	fmt.Printf("%#v", prod.GetPayload()[0])
 }
