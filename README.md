@@ -40,8 +40,19 @@ Adding the correct `content-type` headers for our `swagger spec`. Debugging auto
 rw.Header().Add("Content-Type","application/json")
 ```
 
-## Handling CORS(Cross-Origin Resoruce Sharing)
+## Part 9: Handling CORS(Cross-Origin Resoruce Sharing)
 
+First understanding CORS, we can use this blog post on medium [here](https://medium.com/@baphemot/understanding-cors-18ad6b478e2b)
 
+Importing `gorilla/handlers` and using the **CORS** method, to **grant** `allowed origins` for `localhost:3000`
+
+Here:
+```go
+ch := gohandlers.CORS(gohandlers.AllowedOrigins([]string{"http://localhost:3000"}))
+```
+
+Wrapping the `sm` router from the mux package from gorilla into the **CORS** handlers `sm`
+
+## Part 10: Handling files using the Go Standard Library
 
 
