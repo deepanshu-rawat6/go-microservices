@@ -55,4 +55,4 @@ Wrapping the `sm` router from the mux package from gorilla into the **CORS** han
 
 ## Part 10: Handling files using the Go Standard Library
 
-
+More insights on [http](https://pkg.go.dev/net/http) package
